@@ -8,6 +8,9 @@ float pitch = 0;
 float yaw_set = 0;
 float roll_set = 0;
 float pitch_set = 0;
+float yaw_off = 0;
+float roll_off = 0;
+float pitch_off = 0;
 bool start = false;
 
 unsigned char buff[255];
@@ -162,6 +165,14 @@ void setup() {
    motor[3] = 80;
    pitch = atan2f((float)a.acceleration.y, (float)a.acceleration.z) * 180 / PI_F;
    roll = atan2f((float)a.acceleration.x, (float)a.acceleration.z) * 180 / PI_F;
+   for (int i = 0; i < 100; i++){
+     delay(5);
+     lsm.read();
+     lsm.getEvent(&a, &m, &g, &temp); 
+     ComplementaryFilter(a,g,&pitch,&roll);
+   }
+   roll_off = roll;
+   pitch_off = pitch;
 }
 
 int clamp(int a){
@@ -179,18 +190,12 @@ void loop() {
   sensors_event_t a, m, g, temp;
   lsm.getEvent(&a, &m, &g, &temp); 
   ComplementaryFilter(a,g,&pitch,&roll);
-  float roll_error = (roll - roll_set);
+  float roll_error = (roll - roll_off - roll_set);
   float drive_1 = PID_roll_1.Update(roll_error);
   float drive_2 = PID_roll_2.Update(roll_error);
-
-  //Serial.print("roll: ");Serial.println(roll);
-
   analogWrite(3, clamp(motor[2]));
   analogWrite(4, clamp(motor[3]));
   analogWrite(5, clamp(motor[1]+drive_2));
   analogWrite(8, clamp(motor[0]+drive_1));
-
-  
-  //delay(5);
 }
 
